@@ -287,7 +287,7 @@ const N = {
 };
 
 const tracks = {
-  // Dark boom-bap groove in a Japanese "in" scale (D Eb G A Bb), 96 BPM, 4 bars.
+  // Dark boom-bap groove, drums + 808 bass only, 96 BPM, 4 bars.
   void(b, t0, duration) {
     const bpm = 96;
     const step = 60 / bpm / 4; // 16th note
@@ -295,17 +295,6 @@ const tracks = {
     impact(b, t0);
 
     const roots = [[N.D2], [N.Bb1], [N.G1], [N.A1, N.D2]];
-    const chords = [
-      [N.D3, N.F3, N.A3],
-      [N.Bb2, N.D3, N.F3],
-      [N.G2, N.Bb2, N.D3],
-      [N.A2, N.C3, N.Eb3],
-    ];
-    const melody = [
-      [0, N.D5], [3, N.A4], [6, N.Bb4], [8, N.A4], [10, N.G4], [13, N.Eb4],
-      [16, N.D4], [19, N.Eb4], [22, N.G4], [24, N.A4], [27, N.Bb4], [28, N.A4], [30, N.Eb5],
-    ];
-
     for (let bar = 0; bar < bars; bar++) {
       const tb = t0 + bar * step * 16;
       const last = bar === bars - 1;
@@ -320,17 +309,10 @@ const tracks = {
       if (bar % 2 === 1) hat(b, swing(14), true);
       if (last) [13, 14, 15].forEach((s) => hat(b, swing(s), false, 0.6));
 
-      // 808 + pad
+      // 808 bass
       const r = roots[bar % 4];
       sub808(b, tb, r[0], step * 7, null);
       sub808(b, swing(10), r[0], step * 6, r[1] || null);
-      pad(b, tb, chords[bar % 4], step * 16, bar === 0 ? 0.7 : 1);
-
-      // lead (2-bar phrase, second time an octave up for the first notes)
-      const half = (bar % 2) * 16;
-      melody
-        .filter(([s]) => s >= half && s < half + 16)
-        .forEach(([s, f]) => pluck(b, swing(s - half), bar >= 2 && s < 8 ? f * 2 : f, bar === 0 ? 0.8 : 1));
     }
   },
 };

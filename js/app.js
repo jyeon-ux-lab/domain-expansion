@@ -30,26 +30,50 @@ const state = {
   lastVideoTime: -1,
   w: 0, h: 0, dpr: 1,
   lastAscii: 0,
-  forceMatchUntil: 0, // preview button simulates holding the sign
+  forcePreview: false, // preview button simulates holding the sign until it triggers
   lastTick: -1,
 };
 const TICKS = 4; // clock ticks while the sign is held (the charge ring is the clock face)
 
 // ---------------------------------------------------------------- UI setup
-function renderChips() {
-  const box = $('charChips');
+const GOLD = '#d4ae6a';
+
+function renderRail() {
+  const box = $('rail');
   box.innerHTML = '';
   for (const c of characters) {
     const b = document.createElement('button');
-    b.className = 'chip' + (c === state.character ? ' active' : '');
-    b.textContent = `${c.name} · ${c.domain}`;
-    b.onclick = () => { state.character = c; renderChips(); };
+    b.className = 'rail-item' + (c === state.character ? ' active' : '');
+    b.title = `${c.name} · ${c.domain}`;
+    b.innerHTML = `<span class="emblem">${c.emblem || ''}</span><span class="name"></span>`;
+    b.querySelector('.name').textContent = c.short || c.name;
+    b.onclick = () => { state.character = c; renderRail(); };
     box.appendChild(b);
   }
   $('hint').innerHTML = state.character.hint;
-  document.documentElement.style.setProperty('--accent', state.character.accent);
+  $('hintTitle').textContent = `HAND SIGN · ${state.character.domain}`;
+  $('startEmblem').innerHTML = state.character.emblem || '';
 }
-renderChips();
+renderRail();
+
+// Decorative strip of invented glyphs (deterministic, original) under the start title.
+function glyphStrip(count = 14, seed = 7) {
+  let a = seed;
+  const rnd = () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const parts = [
+    (x) => `M${x + 2} 2V18`, (x) => `M${x + 12} 2V18`, (x) => `M${x + 2} 3H${x + 13}`, (x) => `M${x + 2} 17H${x + 13}`,
+    (x) => `M${x + 2} 10H${x + 10}`, (x) => `M${x + 2} 18L${x + 13} 2`, (x) => `M${x + 3} 2Q${x + 14} 10 ${x + 3} 18`,
+    (x) => `M${x + 12} 4Q${x + 1} 10 ${x + 12} 16`, (x) => `M${x + 7} 6V14`, (x) => `M${x + 4} 6L${x + 7} 9L${x + 10} 6`,
+  ];
+  let d = '';
+  for (let i = 0; i < count; i++) {
+    const x = i * 18;
+    const n = 2 + Math.floor(rnd() * 3);
+    for (let k = 0; k < n; k++) d += parts[Math.floor(rnd() * parts.length)](x);
+  }
+  return `<svg viewBox="0 0 ${count * 18} 20" preserveAspectRatio="xMinYMid meet"><path d="${d}"/></svg>`;
+}
+$('glyphs').innerHTML = glyphStrip();
 
 const toggle = (btn, on) => btn.classList.toggle('on', on);
 toggle($('btnSound'), state.sound);
@@ -67,7 +91,7 @@ $('btnPreview').onclick = () => {
   if (state.sound) unlockAudio();
   if (state.domain) return;
   state.cooldown = 0;
-  state.forceMatchUntil = performance.now() + state.character.holdSeconds * 1000 + 300;
+  state.forcePreview = true;
 };
 stage.addEventListener('pointerdown', (e) => {
   const d = state.domain;
@@ -173,7 +197,7 @@ function triggerDomain(origin) {
   const delay = char.timeStop || 0; // a beat of frozen silence before the drop
   state.domain = { fx: d, t: 0, delay, dropped: false, char, subs: [], music: { stop() {} } };
   state.charge = 0;
-  state.forceMatchUntil = 0;
+  state.forcePreview = false;
   document.body.classList.add('in-domain');
   if (delay > 0) {
     stage.classList.add('timestop');
@@ -227,16 +251,17 @@ function endDomain() {
 function drawHands(dt) {
   ov.clearRect(0, 0, state.w, state.h);
   const inDomain = !!state.domain;
-  const color = inDomain ? 'rgba(235,245,255,0.9)' : state.character.accent;
+  const color = inDomain ? 'rgba(235,245,255,0.9)' : 'rgba(240,232,220,0.85)';
+  const joint = inDomain ? 'rgba(235,245,255,0.9)' : GOLD;
 
   for (const hand of state.hands) {
     const pts = hand.landmarks.map(toScreen);
     ov.save();
     ov.lineCap = 'round';
-    ov.shadowColor = color;
-    ov.shadowBlur = 12;
+    ov.shadowColor = inDomain ? color : 'rgba(212,174,106,0.6)';
+    ov.shadowBlur = 10;
     ov.strokeStyle = color;
-    ov.lineWidth = 2.5;
+    ov.lineWidth = 1.8;
     ov.beginPath();
     for (const [a, b] of CONNECTIONS) {
       ov.moveTo(pts[a].x, pts[a].y);
@@ -245,9 +270,10 @@ function drawHands(dt) {
     ov.stroke();
     ov.shadowBlur = 0;
     pts.forEach((p, i) => {
-      ov.fillStyle = [4, 8, 12, 16, 20].includes(i) ? '#fff' : color;
+      const tip = [4, 8, 12, 16, 20].includes(i);
+      ov.fillStyle = tip ? '#fff' : joint;
       ov.beginPath();
-      ov.arc(p.x, p.y, [4, 8, 12, 16, 20].includes(i) ? 4.5 : 3, 0, Math.PI * 2);
+      ov.arc(p.x, p.y, tip ? 4 : 2.6, 0, Math.PI * 2);
       ov.fill();
     });
     ov.restore();
@@ -258,14 +284,14 @@ function drawHands(dt) {
     const { x, y } = state.chargePos;
     const r = Math.min(state.w, state.h) * 0.16;
     ov.save();
-    ov.strokeStyle = 'rgba(255,255,255,0.18)';
-    ov.lineWidth = 4;
+    ov.strokeStyle = 'rgba(236,228,214,0.22)';
+    ov.lineWidth = 1;
     ov.beginPath();
     ov.arc(x, y, r, 0, Math.PI * 2);
     ov.stroke();
     // clock face: 12 marks, the filled arc and a hand
-    ov.strokeStyle = 'rgba(255,255,255,0.55)';
-    ov.lineWidth = 2;
+    ov.strokeStyle = 'rgba(236,228,214,0.6)';
+    ov.lineWidth = 1.2;
     ov.beginPath();
     for (let i = 0; i < 12; i++) {
       const a = (i / 12) * Math.PI * 2;
@@ -275,14 +301,18 @@ function drawHands(dt) {
     }
     ov.stroke();
     const end = -Math.PI / 2 + Math.PI * 2 * state.charge;
-    ov.strokeStyle = state.character.accent;
-    ov.shadowColor = state.character.accent;
-    ov.shadowBlur = 16;
-    ov.lineWidth = 5;
+    // outer thin frame ring
+    ov.beginPath();
+    ov.arc(x, y, r * 1.12, 0, Math.PI * 2);
+    ov.stroke();
+    ov.strokeStyle = GOLD;
+    ov.shadowColor = GOLD;
+    ov.shadowBlur = 14;
+    ov.lineWidth = 3;
     ov.beginPath();
     ov.arc(x, y, r, -Math.PI / 2, end);
     ov.stroke();
-    ov.lineWidth = 3;
+    ov.lineWidth = 1.6;
     ov.beginPath();
     ov.moveTo(x, y);
     ov.lineTo(x + Math.cos(end) * r * 0.72, y + Math.sin(end) * r * 0.72);
@@ -327,7 +357,7 @@ function frame(now) {
   state.cooldown = Math.max(0, state.cooldown - dt);
   if (!state.domain) {
     const idx = results.findIndex((r) => r.match);
-    const forced = now < state.forceMatchUntil;
+    const forced = state.forcePreview;
     if ((idx >= 0 || forced) && state.cooldown === 0) {
       state.charge = Math.min(1, state.charge + dt / state.character.holdSeconds);
       if (idx >= 0) {

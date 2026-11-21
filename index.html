@@ -3,9 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#15120f" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>영역전개</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -18,28 +21,48 @@
     <div id="subtitles" aria-live="polite"></div>
 
     <header id="topbar">
-      <div id="charChips"></div>
+      <div class="wordmark">
+        <span class="wm-ko">영역전개</span>
+        <span class="wm-en">DOMAIN EXPANSION</span>
+      </div>
       <div class="actions">
-        <button id="btnAscii" class="icon" title="ASCII 카메라">A</button>
-        <button id="btnSound" class="icon" title="소리">♪</button>
-        <button id="btnDebug" class="icon" title="손가락 상태 보기">⌁</button>
-        <button id="btnFlip" class="icon" title="카메라 전환">⟲</button>
+        <button id="btnAscii" class="ring" title="ASCII 카메라" aria-label="ASCII 카메라">
+          <svg viewBox="0 0 24 24"><path d="M5 7h3M10 7h3M15 7h4M5 12h5M12 12h2M16 12h3M5 17h2M9 17h5M16 17h3"/></svg>
+        </button>
+        <button id="btnSound" class="ring" title="소리" aria-label="소리">
+          <svg viewBox="0 0 24 24"><path d="M8 8v8M12 5v14M16 8v8"/></svg>
+        </button>
+        <button id="btnDebug" class="ring" title="손가락 인식 상태" aria-label="손가락 인식 상태">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg>
+        </button>
+        <button id="btnFlip" class="ring" title="카메라 전환" aria-label="카메라 전환">
+          <svg viewBox="0 0 24 24"><path d="M5 12a7 7 0 0 1 12-4.9M19 12a7 7 0 0 1-12 4.9M17 3.5v3.6h-3.6M7 20.5v-3.6h3.6"/></svg>
+        </button>
       </div>
     </header>
+
+    <nav id="rail" aria-label="캐릭터"></nav>
 
     <div id="debug" hidden></div>
 
     <footer id="hintbar">
-      <div id="hint"></div>
-      <button id="btnPreview">미리보기</button>
+      <div id="hintPanel">
+        <div class="label"><span class="diamond"></span><span id="hintTitle">HAND SIGN</span></div>
+        <div id="hint"></div>
+      </div>
+      <button id="btnPreview" class="outline-btn"><span>미리보기</span><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </footer>
 
     <section id="start">
+      <div class="watermark" id="startEmblem" aria-hidden="true"></div>
       <div class="start-inner">
-        <p class="kicker">DOMAIN EXPANSION</p>
-        <h1>영역전개</h1>
+        <div class="title-block">
+          <p class="en">DOMAIN EXPANSION</p>
+          <h1>영역전개</h1>
+          <div class="glyphs" id="glyphs" aria-hidden="true"></div>
+        </div>
         <p class="desc">카메라가 손가락 관절을 추적해요.<br />캐릭터의 손모양(인)을 맺으면 영역이 펼쳐집니다.</p>
-        <button id="btnStart">카메라 켜고 시작</button>
+        <button id="btnStart" class="outline-btn wide"><span>카메라 켜고 시작</span><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
         <p id="status" class="status"></p>
         <p class="small">영상은 기기 안에서만 처리되고 어디에도 전송되지 않아요.</p>
       </div>

@@ -6,6 +6,17 @@ import { createVoid } from '../fx/void.js';
 export default {
   id: 'gojo',
   name: '고죠 사토루',
+  short: '고죠',
+  // Original emblem (infinity loop + eye + four-point stars), drawn for this app.
+  emblem: `<svg viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="38" opacity=".6"/>
+    <circle cx="50" cy="50" r="45" stroke-dasharray="1 5" opacity=".55"/>
+    <path d="M18,50 C18,36 36,36 50,50 C64,64 82,64 82,50 C82,36 64,36 50,50 C36,64 18,64 18,50 Z"/>
+    <path d="M39,50 Q50,41 61,50 Q50,59 39,50 Z"/>
+    <circle cx="50" cy="50" r="3.2" fill="currentColor" stroke="none"/>
+    <path d="M50 4l2.2 6.3 6.3 2.2-6.3 2.2L50 21l-2.2-6.3-6.3-2.2 6.3-2.2z" fill="currentColor" stroke="none"/>
+    <path d="M50 81l1.3 3.7 3.7 1.3-3.7 1.3L50 91l-1.3-3.7-3.7-1.3 3.7-1.3z" fill="currentColor" stroke="none"/>
+  </svg>`,
   domain: '무량공처',
   hint: '<b>검지와 중지를 꼬고</b>, 약지·새끼는 접어 카메라에 손등이나 손바닥을 보여주세요.',
   accent: '#8fdcff',
