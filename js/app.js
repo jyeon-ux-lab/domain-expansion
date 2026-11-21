@@ -1,7 +1,7 @@
 import { analyzeHand, CONNECTIONS } from './hand.js';
 import { characters } from './characters/index.js';
 import { createAsciiRenderer, clearCanvas } from './fx/ascii.js';
-import { unlockAudio, playSound } from './fx/audio.js';
+import { unlockAudio, playTick, playTrack } from './fx/audio.js';
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage');
@@ -30,7 +30,10 @@ const state = {
   lastVideoTime: -1,
   w: 0, h: 0, dpr: 1,
   lastAscii: 0,
+  forceMatchUntil: 0, // preview button simulates holding the sign
+  lastTick: -1,
 };
+const TICKS = 4; // clock ticks while the sign is held (the charge ring is the clock face)
 
 // ---------------------------------------------------------------- UI setup
 function renderChips() {
@@ -62,12 +65,16 @@ $('btnFlip').onclick = async () => {
 };
 $('btnPreview').onclick = () => {
   if (state.sound) unlockAudio();
-  triggerDomain({ x: state.w / 2, y: state.h / 2 });
+  if (state.domain) return;
+  state.cooldown = 0;
+  state.forceMatchUntil = performance.now() + state.character.holdSeconds * 1000 + 300;
 };
 stage.addEventListener('pointerdown', (e) => {
-  if (!state.domain || e.target.closest('button')) return;
+  const d = state.domain;
+  if (!d || e.target.closest('button') || d.t < d.delay + 1) return;
   // tap to end the domain early
-  state.domain.t = Math.max(state.domain.t, state.domain.fx.duration - 0.7);
+  d.t = Math.max(d.t, d.delay + d.fx.duration - 0.7);
+  d.music.stop(0.6);
 });
 
 $('btnStart').onclick = async () => {
@@ -163,15 +170,25 @@ function triggerDomain(origin) {
   if (state.domain) return;
   const char = state.character;
   const d = char.createDomain({ w: state.w, h: state.h, origin });
-  state.domain = { fx: d, t: 0, char, subs: [] };
+  const delay = char.timeStop || 0; // a beat of frozen silence before the drop
+  state.domain = { fx: d, t: 0, delay, dropped: false, char, subs: [], music: { stop() {} } };
   state.charge = 0;
+  state.forceMatchUntil = 0;
   document.body.classList.add('in-domain');
-  stage.classList.remove('shake');
+  if (delay > 0) {
+    stage.classList.add('timestop');
+    video.pause();
+  }
+  if (state.sound) state.domain.music = playTrack(char.sound, d.duration, delay);
+  state.domain.subs = showSubtitles(char.subtitles || []);
+}
+
+function onDrop() {
+  stage.classList.remove('timestop', 'shake');
+  video.play().catch(() => {});
   void stage.offsetWidth;
   stage.classList.add('shake');
-  if (navigator.vibrate) navigator.vibrate([60, 40, 160]);
-  if (state.sound) playSound(char.sound, d.duration);
-  state.domain.subs = showSubtitles(char.subtitles || []);
+  if (navigator.vibrate) navigator.vibrate([80, 40, 200]);
 }
 
 // Subtitles are driven by the domain clock so they stay in sync on slow devices.
@@ -187,15 +204,17 @@ function showSubtitles(lines) {
   });
 }
 
-function updateSubtitles(d) {
+function updateSubtitles(d, t) {
   for (const { el, line } of d.subs) {
-    el.classList.toggle('show', d.t >= line.at);
-    el.classList.toggle('hide', !!line.until && d.t >= line.until);
+    el.classList.toggle('show', t >= line.at);
+    el.classList.toggle('hide', !!line.until && t >= line.until);
   }
 }
 
 function endDomain() {
   state.domain = null;
+  stage.classList.remove('timestop');
+  if (video.paused) video.play().catch(() => {});
   state.cooldown = 1.5;
   fx.clearRect(0, 0, state.w, state.h);
   document.body.classList.remove('in-domain');
@@ -244,12 +263,29 @@ function drawHands(dt) {
     ov.beginPath();
     ov.arc(x, y, r, 0, Math.PI * 2);
     ov.stroke();
+    // clock face: 12 marks, the filled arc and a hand
+    ov.strokeStyle = 'rgba(255,255,255,0.55)';
+    ov.lineWidth = 2;
+    ov.beginPath();
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const r0 = r * (i % 3 === 0 ? 0.8 : 0.88);
+      ov.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0);
+      ov.lineTo(x + Math.cos(a) * r * 0.95, y + Math.sin(a) * r * 0.95);
+    }
+    ov.stroke();
+    const end = -Math.PI / 2 + Math.PI * 2 * state.charge;
     ov.strokeStyle = state.character.accent;
     ov.shadowColor = state.character.accent;
     ov.shadowBlur = 16;
     ov.lineWidth = 5;
     ov.beginPath();
-    ov.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * state.charge);
+    ov.arc(x, y, r, -Math.PI / 2, end);
+    ov.stroke();
+    ov.lineWidth = 3;
+    ov.beginPath();
+    ov.moveTo(x, y);
+    ov.lineTo(x + Math.cos(end) * r * 0.72, y + Math.sin(end) * r * 0.72);
     ov.stroke();
     ov.restore();
   }
@@ -291,14 +327,28 @@ function frame(now) {
   state.cooldown = Math.max(0, state.cooldown - dt);
   if (!state.domain) {
     const idx = results.findIndex((r) => r.match);
-    if (idx >= 0 && state.cooldown === 0) {
+    const forced = now < state.forceMatchUntil;
+    if ((idx >= 0 || forced) && state.cooldown === 0) {
       state.charge = Math.min(1, state.charge + dt / state.character.holdSeconds);
-      const lm = state.hands[idx].landmarks;
-      state.chargePos = toScreen({ x: (lm[0].x + lm[9].x) / 2, y: (lm[0].y + lm[9].y) / 2 });
+      if (idx >= 0) {
+        const lm = state.hands[idx].landmarks;
+        state.chargePos = toScreen({ x: (lm[0].x + lm[9].x) / 2, y: (lm[0].y + lm[9].y) / 2 });
+      } else {
+        state.chargePos = { x: state.w / 2, y: state.h * 0.45 };
+      }
+      // tick-tock as the ring fills; silence once it is full
+      const tick = Math.min(TICKS - 1, Math.floor(state.charge * TICKS));
+      if (state.charge < 1 && tick > state.lastTick) {
+        state.lastTick = tick;
+        if (state.sound) playTick();
+      }
       if (state.charge >= 1) triggerDomain(state.chargePos);
     } else {
-      state.charge = Math.max(0, state.charge - dt / 0.35);
+      // decay slowly so a flickering detection does not reset the clock
+      state.charge = Math.max(0, state.charge - dt / 0.9);
     }
+    if (state.charge === 0 || state.domain) state.lastTick = -1;
+    else state.lastTick = Math.min(state.lastTick, Math.floor(state.charge * TICKS));
   }
 
   // domain effect
@@ -307,10 +357,12 @@ function frame(now) {
   if (state.domain) {
     const d = state.domain;
     d.t += Math.min(0.1, rawDt);
-    updateSubtitles(d);
-    const done = d.fx.render(fx, d.t, dt);
+    const ft = d.t - d.delay; // effect time; negative during the frozen beat
+    if (ft >= 0 && !d.dropped) { d.dropped = true; onDrop(); }
+    updateSubtitles(d, ft);
+    const done = ft >= 0 ? d.fx.render(fx, ft, dt) : false;
     const ac = d.char.asciiCamera;
-    if (ac && d.t >= ac.from && d.t < d.fx.duration - 0.6) {
+    if (ac && ft >= ac.from && ft < d.fx.duration - 0.6) {
       asciiOn = true;
       asciiOpts = { color: ac.color, alpha: ac.alpha };
     }

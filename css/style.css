@@ -41,6 +41,9 @@ html, body {
   transform: scaleX(-1);
 }
 #video.no-mirror { transform: none; }
+#video { transition: filter 0.08s; }
+#stage.timestop #video { filter: grayscale(1) contrast(1.35) brightness(0.7); }
+#stage.timestop #overlay { opacity: 0.35; }
 
 #ascii { pointer-events: none; opacity: 0; transition: opacity 0.4s; }
 #ascii.on { opacity: 1; }

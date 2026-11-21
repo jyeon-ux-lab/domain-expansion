@@ -9,7 +9,8 @@ export default {
   domain: '무량공처',
   hint: '<b>검지와 중지를 꼬고</b>, 약지·새끼는 접어 카메라에 손등이나 손바닥을 보여주세요.',
   accent: '#8fdcff',
-  holdSeconds: 0.45, // how long the sign must be held before triggering
+  holdSeconds: 1.3, // how long the sign must be held (the clock ticks meanwhile)
+  timeStop: 0.5, // frozen, silent beat between the last tick and the drop
 
   /**
    * @param {ReturnType<import('../hand.js').analyzeHand>} hand
@@ -52,7 +53,7 @@ export default {
 
   // Timed subtitle lines (seconds after trigger). Text is original.
   subtitles: [
-    { at: 1.2, until: 6.6, cls: 'hanja', text: '無量空処' },
+    { at: 1.2, until: 9.0, cls: 'hanja', text: '無量空処' },
   ],
 
   // The camera feed becomes ASCII art inside the domain from this moment.
@@ -65,7 +66,7 @@ export default {
       w,
       h,
       origin,
-      duration: 7.5,
+      duration: 10,
       glyphs: '無量空処∞01·:;+*×÷=<>/\\|{}[]#%&@$?!∴∵≡≈∑∫√πΩ'.split(''),
       palette: {
         bgInner: '#0b1a3a',
