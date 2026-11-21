@@ -164,6 +164,23 @@ function slam(b, t, vol = 1) {
   o.stop(t + 0.4);
 }
 
+// Air-cutting slash: a fast downward noise sweep (kept in the mids) with a low thud.
+function swish({ out, send }, t, vol = 1) {
+  const n = noise();
+  const bp = ac.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.Q.value = 1.4;
+  bp.frequency.setValueAtTime(1800, t);
+  bp.frequency.exponentialRampToValueAtTime(350, t + 0.14);
+  const g = ac.createGain();
+  env(g, t, 0.55 * vol, 0.004, 0.16);
+  n.connect(bp).connect(g);
+  g.connect(out);
+  g.connect(send);
+  n.start(t, Math.random());
+  n.stop(t + 0.22);
+}
+
 function impact({ out, send }, t) {
   const o = ac.createOscillator();
   const g = ac.createGain();
@@ -217,8 +234,25 @@ export function playTick(at) {
   o.stop(t + 0.03);
 }
 
+// ------------------------------------------------------------------ public: heartbeat
+export function playHeart(at) {
+  if (!ac) return;
+  const t = at ?? ac.currentTime + 0.005;
+  for (const [dt, vol] of [[0, 1], [0.17, 0.7]]) {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(95, t + dt);
+    o.frequency.exponentialRampToValueAtTime(45, t + dt + 0.12);
+    env(g, t + dt, 1.1 * vol, 0.006, 0.2);
+    o.connect(drive()).connect(g).connect(master);
+    o.start(t + dt);
+    o.stop(t + dt + 0.3);
+  }
+}
+
 // ------------------------------------------------------------------ public: tracks
-const N = { A1: 55, Bb1: 58.27, D2: 73.42 };
+const N = { F1: 43.65, G1: 49, Ab1: 51.91, A1: 55, Bb1: 58.27, D2: 73.42 };
 
 const tracks = {
   // Low, heavy groove: "du-dum du-dum, boom, boom" kicks over a driven 808. 96 BPM, 4 bars.
@@ -247,12 +281,31 @@ const tracks = {
       sub808(b, at(8), roots[bar % 4], step * 8, last ? roots[bar % 4] / 2 : null);
     }
   },
+
+  // Slow, menacing groove: half-time slams, rolling low kicks and a slash on every cut. 84 BPM.
+  shrine(b, t0, duration, { bpm = 84, slashTimes = [] } = {}) {
+    const step = 60 / bpm / 4;
+    const bars = Math.max(1, Math.ceil(duration / (step * 16)));
+    impact(b, t0);
+    const roots = [N.G1, N.G1, N.Ab1, N.F1];
+    for (let bar = 0; bar < bars; bar++) {
+      const tb = t0 + bar * step * 16;
+      const at = (s) => tb + s * step;
+      if (at(0) > t0 + duration - 0.5) break;
+      slam(b, at(0), 1);
+      boom(b, at(3), 0.6); boom(b, at(6), 0.8); boom(b, at(7), 0.6);
+      slam(b, at(8), 0.95);
+      boom(b, at(11), 0.6); boom(b, at(14), 0.7); boom(b, at(15), 0.85);
+      sub808(b, tb, roots[bar % 4], step * 14, roots[bar % 4] * 0.94);
+    }
+    for (const s of slashTimes) if (s < duration - 0.8) swish(b, t0 + s, 0.9);
+  },
 };
 
 /**
  * Starts a track `offset` seconds from now. Returns a handle with stop(fadeSeconds).
  */
-export function playTrack(name, duration, offset = 0) {
+export function playTrack(name, duration, offset = 0, opts = {}) {
   if (!ac || !tracks[name]) return { stop() {} };
   try {
     const b = bus();
@@ -262,7 +315,7 @@ export function playTrack(name, duration, offset = 0) {
     b.out.gain.linearRampToValueAtTime(0.0001, t0 + duration);
     b.send.gain.setValueAtTime(1, t0 + duration - 1.2);
     b.send.gain.linearRampToValueAtTime(0.0001, t0 + duration);
-    tracks[name](b, t0, duration);
+    tracks[name](b, t0, duration, opts);
     const disconnect = () => { try { b.out.disconnect(); b.send.disconnect(); } catch (_) {} };
     const timer = setTimeout(disconnect, (offset + duration + 3) * 1000);
     return {
@@ -286,7 +339,7 @@ export function playTrack(name, duration, offset = 0) {
  * Renders the full sequence (ticks, frozen beat, track) offline into an AudioBuffer.
  * Used for previews/tests; does not touch the live audio context.
  */
-export async function renderPreview(name, duration, { ticks = 4, tickGap = 0.325, stopGap = 0.5 } = {}) {
+export async function renderPreview(name, duration, { ticks = 4, tickGap = 0.325, stopGap = 0.5, charge = 'tick', opts = {} } = {}) {
   const saved = [ac, master, reverbSend, noiseBuf];
   const sr = 44100;
   const total = ticks * tickGap + stopGap + duration + 0.5;
@@ -294,8 +347,8 @@ export async function renderPreview(name, duration, { ticks = 4, tickGap = 0.325
     ac = new OfflineAudioContext(2, Math.ceil(total * sr), sr);
     noiseBuf = null;
     setupGraph();
-    for (let i = 0; i < ticks; i++) playTick(0.05 + i * tickGap);
-    playTrack(name, duration, ticks * tickGap + stopGap);
+    for (let i = 0; i < ticks; i++) (charge === 'heart' ? playHeart : playTick)(0.05 + i * tickGap);
+    playTrack(name, duration, ticks * tickGap + stopGap, opts);
     return await ac.startRendering();
   } finally {
     [ac, master, reverbSend, noiseBuf] = saved;

@@ -280,6 +280,14 @@ body.in-domain #debug { opacity: 0; pointer-events: none; }
   border-bottom: 1px solid rgba(236, 228, 214, 0.25);
 }
 
+.sub.hanja.shrine {
+  letter-spacing: 0.08em;
+  padding-left: 0.08em;
+  font-size: clamp(42px, 14vw, 88px);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 0 22px rgba(255, 50, 50, 0.65), 0 0 60px rgba(180, 0, 20, 0.5);
+  border-color: rgba(255, 160, 150, 0.4) rgba(255, 160, 150, 0.4) rgba(255, 160, 150, 0.2);
+}
+
 /* ---------- start screen ---------- */
 #start {
   position: absolute;

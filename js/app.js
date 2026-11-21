@@ -1,7 +1,7 @@
 import { analyzeHand, CONNECTIONS } from './hand.js';
 import { characters } from './characters/index.js';
 import { createAsciiRenderer, clearCanvas } from './fx/ascii.js';
-import { unlockAudio, playTick, playTrack } from './fx/audio.js';
+import { unlockAudio, playTick, playHeart, playTrack } from './fx/audio.js';
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage');
@@ -44,10 +44,19 @@ function renderRail() {
   for (const c of characters) {
     const b = document.createElement('button');
     b.className = 'rail-item' + (c === state.character ? ' active' : '');
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(c === state.character));
     b.title = `${c.name} · ${c.domain}`;
     b.innerHTML = `<span class="emblem">${c.emblem || ''}</span><span class="name"></span>`;
     b.querySelector('.name').textContent = c.short || c.name;
-    b.onclick = () => { state.character = c; renderRail(); };
+    b.onclick = () => {
+      if (state.domain || c === state.character) return;
+      state.character = c;
+      state.charge = 0;
+      state.lastTick = -1;
+      state.forcePreview = false;
+      renderRail();
+    };
     box.appendChild(b);
   }
   $('hint').innerHTML = state.character.hint;
@@ -203,7 +212,7 @@ function triggerDomain(origin) {
     stage.classList.add('timestop');
     video.pause();
   }
-  if (state.sound) state.domain.music = playTrack(char.sound, d.duration, delay);
+  if (state.sound) state.domain.music = playTrack(char.sound, d.duration, delay, char.trackOptions);
   state.domain.subs = showSubtitles(char.subtitles || []);
 }
 
@@ -312,11 +321,13 @@ function drawHands(dt) {
     ov.beginPath();
     ov.arc(x, y, r, -Math.PI / 2, end);
     ov.stroke();
-    ov.lineWidth = 1.6;
-    ov.beginPath();
-    ov.moveTo(x, y);
-    ov.lineTo(x + Math.cos(end) * r * 0.72, y + Math.sin(end) * r * 0.72);
-    ov.stroke();
+    if (state.character.chargeStyle === 'clock') {
+      ov.lineWidth = 1.6;
+      ov.beginPath();
+      ov.moveTo(x, y);
+      ov.lineTo(x + Math.cos(end) * r * 0.72, y + Math.sin(end) * r * 0.72);
+      ov.stroke();
+    }
     ov.restore();
   }
 }
@@ -380,7 +391,7 @@ function frame(now) {
       const tick = Math.min(TICKS - 1, Math.floor(state.charge * TICKS));
       if (state.charge < 1 && tick > state.lastTick) {
         state.lastTick = tick;
-        if (state.sound) playTick();
+        if (state.sound) (state.character.chargeSound === 'heart' ? playHeart : playTick)();
       }
       if (state.charge >= 1) triggerDomain(state.chargePos);
     } else {
