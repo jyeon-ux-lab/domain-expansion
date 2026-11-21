@@ -52,10 +52,7 @@ export default {
 
   // Timed subtitle lines (seconds after trigger). Text is original.
   subtitles: [
-    { at: 0.5, until: 6.6, cls: 'kicker', text: 'DOMAIN EXPANSION' },
-    { at: 0.9, until: 6.6, cls: 'title', text: '영역전개' },
-    { at: 1.9, until: 6.6, cls: 'hanja', text: '無 量 空 処' },
-    { at: 3.4, until: 6.6, cls: 'line', text: '끝없이 쏟아지는 정보 속에서, 아무것도 할 수 없다.' },
+    { at: 1.2, until: 6.6, cls: 'hanja', text: '無量空処' },
   ],
 
   // The camera feed becomes ASCII art inside the domain from this moment.

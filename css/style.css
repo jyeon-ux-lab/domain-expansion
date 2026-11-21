@@ -176,7 +176,7 @@ body.in-domain #topbar, body.in-domain #hintbar, body.in-domain #debug { opacity
 .sub.hide { opacity: 0; transform: translateY(-6px); }
 .sub.kicker { font-size: 13px; letter-spacing: 0.5em; color: var(--accent); padding-left: 0.5em; }
 .sub.title { font-size: clamp(34px, 11vw, 64px); font-weight: 800; letter-spacing: 0.08em; }
-.sub.hanja { font-size: clamp(16px, 5vw, 24px); letter-spacing: 0.6em; padding-left: 0.6em; color: rgba(220,236,255,0.85); }
+.sub.hanja { font-size: clamp(40px, 13vw, 76px); font-weight: 700; letter-spacing: 0.32em; padding-left: 0.32em; color: #f4f9ff; font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", "Noto Serif KR", "Songti SC", serif; }
 .sub.line {
   font-size: 15px;
   color: rgba(235, 242, 255, 0.92);
