@@ -2,6 +2,7 @@
 // Hand sign: index and middle fingers crossed, ring + pinky folded.
 import { dist } from '../hand.js';
 import { createVoid } from '../fx/void.js';
+import { createCosmos } from '../fx/cosmos.js';
 
 export default {
   id: 'gojo',
@@ -66,31 +67,39 @@ export default {
 
   // Timed subtitle lines (seconds after trigger). Text is original.
   subtitles: [
-    { at: 1.2, until: 9.0, cls: 'hanja', text: '無量空処' },
+    { at: 2.0, until: 9.0, cls: 'hanja', text: '無量空処' },
   ],
 
   // The camera feed becomes ASCII art inside the domain from this moment.
-  asciiCamera: { from: 1.3, color: [170, 225, 255], alpha: 0.42 },
+  asciiCamera: { from: 2.8, color: [200, 180, 255], alpha: 0.26 },
 
   sound: 'void',
 
+  // Effect types. 1 = vortex → crystal burst → orbit map (current). 'legacy' = the first starfield version.
+  effectType: 1,
   createDomain({ w, h, origin }) {
-    return createVoid({
-      w,
-      h,
-      origin,
-      duration: 10,
-      glyphs: '無量空処∞01·:;+*×÷=<>/\\|{}[]#%&@$?!∴∵≡≈∑∫√πΩ'.split(''),
-      palette: {
-        bgInner: '#0b1a3a',
-        bgMid: '#05081a',
-        stars: ['#ffffff', '#cfefff', '#9fd8ff', '#c7b8ff', '#ffe9ff'],
-        ring: 'rgba(160, 220, 255, 1)',
-        glyphs: ['#bfe9ff', '#8fd0ff', '#e2d6ff', '#ffffff'],
-        core: 'rgba(200, 235, 255, 0.9)',
-        coreGlow: 'rgba(90, 140, 255, 0.35)',
-        streak: 'rgba(190, 230, 255, 0.9)',
-      },
-    });
+    const type = new URLSearchParams(location.search).get('fx') || this.effectType;
+    if (String(type) === 'legacy') return legacyVoid({ w, h, origin });
+    return createCosmos({ w, h, origin, duration: 10 });
   },
 };
+
+function legacyVoid({ w, h, origin }) {
+  return createVoid({
+    w,
+    h,
+    origin,
+    duration: 10,
+    glyphs: '無量空処∞01·:;+*×÷=<>/\\|{}[]#%&@$?!∴∵≡≈∑∫√πΩ'.split(''),
+    palette: {
+      bgInner: '#0b1a3a',
+      bgMid: '#05081a',
+      stars: ['#ffffff', '#cfefff', '#9fd8ff', '#c7b8ff', '#ffe9ff'],
+      ring: 'rgba(160, 220, 255, 1)',
+      glyphs: ['#bfe9ff', '#8fd0ff', '#e2d6ff', '#ffffff'],
+      core: 'rgba(200, 235, 255, 0.9)',
+      coreGlow: 'rgba(90, 140, 255, 0.35)',
+      streak: 'rgba(190, 230, 255, 0.9)',
+    },
+  });
+}
