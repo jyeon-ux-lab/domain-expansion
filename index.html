@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>영역전개</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="stage">
+    <video id="video" playsinline muted autoplay></video>
+    <canvas id="fx"></canvas>
+    <canvas id="ascii"></canvas>
+    <canvas id="overlay"></canvas>
+
+    <div id="subtitles" aria-live="polite"></div>
+
+    <header id="topbar">
+      <div id="charChips"></div>
+      <div class="actions">
+        <button id="btnAscii" class="icon" title="ASCII 카메라">A</button>
+        <button id="btnSound" class="icon" title="소리">♪</button>
+        <button id="btnDebug" class="icon" title="손가락 상태 보기">⌁</button>
+        <button id="btnFlip" class="icon" title="카메라 전환">⟲</button>
+      </div>
+    </header>
+
+    <div id="debug" hidden></div>
+
+    <footer id="hintbar">
+      <div id="hint"></div>
+      <button id="btnPreview">미리보기</button>
+    </footer>
+
+    <section id="start">
+      <div class="start-inner">
+        <p class="kicker">DOMAIN EXPANSION</p>
+        <h1>영역전개</h1>
+        <p class="desc">카메라가 손가락 관절을 추적해요.<br />캐릭터의 손모양(인)을 맺으면 영역이 펼쳐집니다.</p>
+        <button id="btnStart">카메라 켜고 시작</button>
+        <p id="status" class="status"></p>
+        <p class="small">영상은 기기 안에서만 처리되고 어디에도 전송되지 않아요.</p>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
