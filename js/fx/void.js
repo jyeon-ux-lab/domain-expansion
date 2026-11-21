@@ -41,7 +41,7 @@ export function createVoid({ w, h, origin, palette, glyphs, duration = 7.5 }) {
       // Void centre drifts from the hand to the middle of the screen.
       const cm = easeInOut(clamp01((t - 0.2) / 1.4));
       const cx = lerp(origin.x, w / 2, cm);
-      const cy = lerp(origin.y, h * 0.44, cm);
+      const cy = lerp(origin.y, h * 0.34, cm); // above the centred title
 
       ctx.clearRect(0, 0, w, h);
       ctx.save();

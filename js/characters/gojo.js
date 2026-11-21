@@ -18,7 +18,7 @@ export default {
     <path d="M50 81l1.3 3.7 3.7 1.3-3.7 1.3L50 91l-1.3-3.7-3.7-1.3 3.7-1.3z" fill="currentColor" stroke="none"/>
   </svg>`,
   domain: '무량공처',
-  hint: '<b>검지와 중지를 꼬고</b>, 약지·새끼는 접어 카메라에 손등이나 손바닥을 보여주세요.',
+  hint: '<b>검지와 중지를 꼬거나</b>, <b>두 손을 모아</b> 손끝을 맞대고 1초 정도 유지하세요.',
   accent: '#8fdcff',
   holdSeconds: 1.3, // how long the sign must be held (the clock ticks meanwhile)
   timeStop: 0.5, // frozen, silent beat between the last tick and the drop
@@ -58,6 +58,32 @@ export default {
         '꼬임': crossed,
         tipGap: tipGap.toFixed(2),
         tipDist: tipDist.toFixed(2),
+      },
+    };
+  },
+
+  /**
+   * Two-hand sign: both hands raised with fingers up, palms brought together
+   * (wrists close and index/middle fingertips touching).
+   */
+  detectPair(a, b) {
+    const palm = (a.palm + b.palm) / 2;
+    const up = (h) => h.fingers.index.reach > 1.35 && h.fingers.middle.reach > 1.35 && h.fingers.ring.reach > 1.25;
+    const bothUp = up(a) && up(b);
+    const wristGap = dist(a.p[0], b.p[0]) / palm;
+    const tipGap = (dist(a.p[8], b.p[8]) + dist(a.p[12], b.p[12])) / 2 / palm;
+    const wristsClose = wristGap < 1.2;
+    const tipsTouch = tipGap < 0.75;
+    const match = bothUp && wristsClose && tipsTouch;
+    return {
+      match,
+      score: [bothUp, wristsClose, tipsTouch].filter(Boolean).length / 3,
+      debug: {
+        '양손 펴짐': bothUp,
+        '손목 가까움': wristsClose,
+        '손끝 맞닿음': tipsTouch,
+        wristGap: wristGap.toFixed(2),
+        tipGap: tipGap.toFixed(2),
       },
     };
   },

@@ -94,64 +94,6 @@ function bus() {
 }
 
 // ------------------------------------------------------------------ instruments
-function kick({ out }, t, vol = 1) {
-  const o = ac.createOscillator();
-  const g = ac.createGain();
-  o.type = 'sine';
-  o.frequency.setValueAtTime(160, t);
-  o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
-  env(g, t, 0.95 * vol, 0.003, 0.42);
-  o.connect(g).connect(out);
-  o.start(t);
-  o.stop(t + 0.5);
-  // beater click
-  const n = noise();
-  const f = ac.createBiquadFilter();
-  f.type = 'highpass';
-  f.frequency.value = 2500;
-  const ng = ac.createGain();
-  env(ng, t, 0.25 * vol, 0.001, 0.02);
-  n.connect(f).connect(ng).connect(out);
-  n.start(t, Math.random());
-  n.stop(t + 0.05);
-}
-
-function snare({ out, send }, t, vol = 1) {
-  const n = noise();
-  const bp = ac.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = 2200;
-  bp.Q.value = 0.7;
-  const ng = ac.createGain();
-  env(ng, t, 0.55 * vol, 0.002, 0.2);
-  n.connect(bp).connect(ng);
-  ng.connect(out);
-  ng.connect(send);
-  n.start(t, Math.random());
-  n.stop(t + 0.3);
-  const o = ac.createOscillator();
-  const og = ac.createGain();
-  o.type = 'triangle';
-  o.frequency.setValueAtTime(210, t);
-  o.frequency.exponentialRampToValueAtTime(150, t + 0.08);
-  env(og, t, 0.45 * vol, 0.002, 0.12);
-  o.connect(og).connect(out);
-  o.start(t);
-  o.stop(t + 0.2);
-}
-
-function hat({ out }, t, open = false, vol = 1) {
-  const n = noise();
-  const hp = ac.createBiquadFilter();
-  hp.type = 'highpass';
-  hp.frequency.value = 7500;
-  const g = ac.createGain();
-  env(g, t, (open ? 0.16 : 0.12) * vol, 0.001, open ? 0.28 : 0.045);
-  n.connect(hp).connect(g).connect(out);
-  n.start(t, Math.random());
-  n.stop(t + (open ? 0.35 : 0.08));
-}
-
 function sub808({ out }, t, freq, len, glideTo) {
   const o = ac.createOscillator();
   o.type = 'sine';
@@ -171,59 +113,55 @@ function sub808({ out }, t, freq, len, glideTo) {
   o.stop(t + len + 0.05);
 }
 
-// Plucked-string lead with a little pitch bend on the attack (koto-like, synthesized).
-function pluck({ out, send }, t, freq, vol = 1) {
+// Deep, driven kick tuned for phone speakers: sub sine plus a mid "thump" layer, no bright click.
+function boom({ out }, t, vol = 1) {
+  const o = ac.createOscillator();
   const g = ac.createGain();
-  env(g, t, 0.22 * vol, 0.003, 1.3);
+  o.type = 'sine';
+  o.frequency.setValueAtTime(115, t);
+  o.frequency.exponentialRampToValueAtTime(38, t + 0.2);
+  env(g, t, 0.9 * vol, 0.004, 0.6);
+  o.connect(drive()).connect(g).connect(out);
+  o.start(t);
+  o.stop(t + 0.7);
+  const m = ac.createOscillator();
+  const mg = ac.createGain();
   const lp = ac.createBiquadFilter();
   lp.type = 'lowpass';
-  lp.Q.value = 3;
-  lp.frequency.setValueAtTime(4200, t);
-  lp.frequency.exponentialRampToValueAtTime(700, t + 0.35);
-  for (const [type, mul, lvl] of [['triangle', 1, 1], ['sawtooth', 2, 0.25]]) {
-    const o = ac.createOscillator();
-    const og = ac.createGain();
-    og.gain.value = lvl;
-    o.type = type;
-    o.frequency.setValueAtTime(freq * mul * 1.03, t);
-    o.frequency.exponentialRampToValueAtTime(freq * mul, t + 0.04);
-    o.connect(og).connect(lp);
-    o.start(t);
-    o.stop(t + 1.4);
-  }
-  lp.connect(g);
-  g.connect(out);
-  g.connect(send);
+  lp.frequency.value = 900;
+  m.type = 'triangle';
+  m.frequency.setValueAtTime(190, t);
+  m.frequency.exponentialRampToValueAtTime(70, t + 0.07);
+  env(mg, t, 0.55 * vol, 0.002, 0.09);
+  m.connect(lp).connect(mg).connect(out);
+  m.start(t);
+  m.stop(t + 0.15);
 }
 
-// Breathy "choir" pad: detuned saws through a vowel-ish band-pass.
-function pad({ out, send }, t, freqs, len, vol = 1) {
+// Big low hit ("쿵"): kick + a dark, low noise body with a short room tail.
+function slam(b, t, vol = 1) {
+  boom(b, t, vol);
+  const n = noise();
+  const lp = ac.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(1100, t);
+  lp.frequency.exponentialRampToValueAtTime(250, t + 0.25);
   const g = ac.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(0.09 * vol, t + 0.5);
-  g.gain.setValueAtTime(0.09 * vol, t + len - 0.3);
-  g.gain.linearRampToValueAtTime(0.0001, t + len);
-  const f1 = ac.createBiquadFilter();
-  f1.type = 'bandpass';
-  f1.frequency.value = 750;
-  f1.Q.value = 1.2;
-  const f2 = ac.createBiquadFilter();
-  f2.type = 'lowpass';
-  f2.frequency.value = 2000;
-  for (const f of freqs) {
-    for (const det of [-9, 0, 9]) {
-      const o = ac.createOscillator();
-      o.type = 'sawtooth';
-      o.frequency.value = f;
-      o.detune.value = det;
-      o.connect(f1);
-      o.start(t);
-      o.stop(t + len + 0.05);
-    }
-  }
-  f1.connect(f2).connect(g);
-  g.connect(out);
-  g.connect(send);
+  env(g, t, 0.5 * vol, 0.003, 0.28);
+  n.connect(lp).connect(g);
+  g.connect(b.out);
+  g.connect(b.send);
+  n.start(t, Math.random());
+  n.stop(t + 0.35);
+  const o = ac.createOscillator();
+  const og = ac.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(96, t);
+  o.frequency.exponentialRampToValueAtTime(62, t + 0.3);
+  env(og, t, 0.5 * vol, 0.003, 0.35);
+  o.connect(og).connect(b.out);
+  o.start(t);
+  o.stop(t + 0.4);
 }
 
 function impact({ out, send }, t) {
@@ -240,8 +178,8 @@ function impact({ out, send }, t) {
   const n = noise();
   const f = ac.createBiquadFilter();
   f.type = 'lowpass';
-  f.frequency.setValueAtTime(9000, t);
-  f.frequency.exponentialRampToValueAtTime(300, t + 2.5);
+  f.frequency.setValueAtTime(2800, t);
+  f.frequency.exponentialRampToValueAtTime(200, t + 2.5);
   const ng = ac.createGain();
   env(ng, t, 0.3, 0.005, 2.6);
   n.connect(f).connect(ng);
@@ -280,39 +218,33 @@ export function playTick(at) {
 }
 
 // ------------------------------------------------------------------ public: tracks
-const N = {
-  A1: 55, Bb1: 58.27, G1: 49, D2: 73.42,
-  G3: 196, A3: 220, D3: 146.83, F3: 174.61, Bb2: 116.54, G2: 98, A2: 110, C3: 130.81, Eb3: 155.56,
-  D4: 293.66, Eb4: 311.13, G4: 392, A4: 440, Bb4: 466.16, D5: 587.33, Eb5: 622.25, G5: 783.99,
-};
+const N = { A1: 55, Bb1: 58.27, D2: 73.42 };
 
 const tracks = {
-  // Dark boom-bap groove, drums + 808 bass only, 96 BPM, 4 bars.
+  // Low, heavy groove: "du-dum du-dum, boom, boom" kicks over a driven 808. 96 BPM, 4 bars.
+  // Nothing above the low-mids, so there is no bright or ringing sound.
   void(b, t0, duration) {
     const bpm = 96;
     const step = 60 / bpm / 4; // 16th note
     const bars = Math.max(1, Math.round(duration / (step * 16)));
     impact(b, t0);
 
-    const roots = [[N.D2], [N.Bb1], [N.G1], [N.A1, N.D2]];
+    const roots = [N.D2, N.D2, N.Bb1, N.A1];
     for (let bar = 0; bar < bars; bar++) {
       const tb = t0 + bar * step * 16;
+      const at = (s) => tb + s * step;
       const last = bar === bars - 1;
-      const swing = (s) => tb + s * step + (s % 2 === 1 ? step * 0.28 : 0);
 
-      // drums
-      const kicks = last ? [0, 3, 10, 11] : [0, 7, 10];
-      kicks.forEach((s) => kick(b, swing(s), s === 0 ? 1 : 0.8));
-      [4, 12].forEach((s) => snare(b, swing(s)));
-      for (let s = 0; s < 16; s += 2) hat(b, swing(s), false, s % 4 === 0 ? 1 : 0.7);
-      for (let s = 1; s < 16; s += 4) hat(b, swing(s), false, 0.4);
-      if (bar % 2 === 1) hat(b, swing(14), true);
-      if (last) [13, 14, 15].forEach((s) => hat(b, swing(s), false, 0.6));
+      // du-dum du-dum
+      boom(b, at(0), 0.7); boom(b, at(1), 1);
+      boom(b, at(4), 0.7); boom(b, at(5), 1);
+      // boom, boom (last bar rolls into a fill)
+      if (last) [8, 10, 12, 13, 14, 15].forEach((s, i) => slam(b, at(s), 0.75 + i * 0.05));
+      else { slam(b, at(8)); slam(b, at(12)); }
 
-      // 808 bass
-      const r = roots[bar % 4];
-      sub808(b, tb, r[0], step * 7, null);
-      sub808(b, swing(10), r[0], step * 6, r[1] || null);
+      // 808 underneath, gliding down at the very end
+      sub808(b, tb, roots[bar % 4], step * 8, null);
+      sub808(b, at(8), roots[bar % 4], step * 8, last ? roots[bar % 4] / 2 : null);
     }
   },
 };

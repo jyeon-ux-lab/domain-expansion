@@ -321,13 +321,13 @@ function drawHands(dt) {
   }
 }
 
-function updateDebug(results) {
+function updateDebug(results, pair) {
   if (!state.debug) return;
   if (!results.length) { $('debug').textContent = '손이 안 보여요'; return; }
-  $('debug').textContent = results
-    .map((r, i) => `손 ${i + 1} ${r.match ? '✅ 인식' : ''}\n` +
-      Object.entries(r.debug).map(([k, v]) => `  ${k}: ${v === true ? 'O' : v === false ? '·' : v}`).join('\n'))
-    .join('\n') + `\n충전 ${(state.charge * 100) | 0}%`;
+  const fmt = (o) => Object.entries(o).map(([k, v]) => `  ${k}: ${v === true ? 'O' : v === false ? '·' : v}`).join('\n');
+  let text = results.map((r, i) => `손 ${i + 1} ${r.match ? '✅ 인식' : ''}\n${fmt(r.debug)}`).join('\n');
+  if (pair) text += `\n두 손 ${pair.match ? '✅ 인식' : ''}\n${fmt(pair.debug)}`;
+  $('debug').textContent = text + `\n충전 ${(state.charge * 100) | 0}%`;
 }
 
 // ---------------------------------------------------------------- main loop
@@ -352,15 +352,25 @@ function frame(now) {
 
   // gesture → charge
   const aspect = (video.videoWidth || 1) / (video.videoHeight || 1);
-  const results = state.hands.map((h) => state.character.detect(analyzeHand(h.landmarks, aspect)));
-  updateDebug(results);
+  const analyzed = state.hands.map((h) => analyzeHand(h.landmarks, aspect));
+  const results = analyzed.map((a) => state.character.detect(a));
+  const pair = analyzed.length >= 2 && state.character.detectPair
+    ? state.character.detectPair(analyzed[0], analyzed[1]) : null;
+  updateDebug(results, pair);
   state.cooldown = Math.max(0, state.cooldown - dt);
   if (!state.domain) {
     const idx = results.findIndex((r) => r.match);
     const forced = state.forcePreview;
-    if ((idx >= 0 || forced) && state.cooldown === 0) {
+    const pairMatch = !!(pair && pair.match);
+    if ((idx >= 0 || pairMatch || forced) && state.cooldown === 0) {
       state.charge = Math.min(1, state.charge + dt / state.character.holdSeconds);
-      if (idx >= 0) {
+      if (pairMatch) {
+        const [l1, l2] = [state.hands[0].landmarks, state.hands[1].landmarks];
+        state.chargePos = toScreen({
+          x: (l1[0].x + l1[9].x + l2[0].x + l2[9].x) / 4,
+          y: (l1[0].y + l1[9].y + l2[0].y + l2[9].y) / 4,
+        });
+      } else if (idx >= 0) {
         const lm = state.hands[idx].landmarks;
         state.chargePos = toScreen({ x: (lm[0].x + lm[9].x) / 2, y: (lm[0].y + lm[9].y) / 2 });
       } else {

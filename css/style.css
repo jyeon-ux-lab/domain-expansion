@@ -246,14 +246,15 @@ body.in-domain #debug { opacity: 0; pointer-events: none; }
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(var(--safe-b) + 14%);
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 6;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
   pointer-events: none;
-  padding: 0 20px;
+  padding: 0 16px;
   text-align: center;
   word-break: keep-all;
 }
@@ -267,12 +268,14 @@ body.in-domain #debug { opacity: 0; pointer-events: none; }
 .sub.hide { opacity: 0; transform: translateY(-6px); }
 .sub.line { font-size: 15px; font-weight: 300; }
 .sub.hanja {
-  font-size: clamp(40px, 13vw, 76px);
-  font-weight: 700;
-  letter-spacing: 0.32em;
-  padding: 8px 0.1em 10px 0.42em;
-  color: #f6f2ea;
-  font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", "Noto Serif KR", "Songti SC", serif;
+  font-family: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans CJK JP", "Noto Sans KR", sans-serif;
+  font-size: clamp(48px, 17vw, 96px);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  line-height: 1.1;
+  padding: 10px 0 12px 0.14em;
+  color: #fbf8f2;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 0 24px rgba(120, 200, 255, 0.55), 0 0 60px rgba(60, 120, 255, 0.35);
   border-top: 1px solid rgba(236, 228, 214, 0.45);
   border-bottom: 1px solid rgba(236, 228, 214, 0.25);
 }
