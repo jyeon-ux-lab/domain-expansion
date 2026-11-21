@@ -163,9 +163,9 @@ async function loadLandmarker() {
     baseOptions: { modelAssetPath: new URL('../models/hand_landmarker.task', import.meta.url).href, delegate },
     runningMode: 'VIDEO',
     numHands: 2,
-    minHandDetectionConfidence: 0.5,
-    minHandPresenceConfidence: 0.5,
-    minTrackingConfidence: 0.5,
+    minHandDetectionConfidence: 0.35,
+    minHandPresenceConfidence: 0.35,
+    minTrackingConfidence: 0.4,
   });
   try {
     state.landmarker = await make('GPU');
@@ -213,6 +213,7 @@ function triggerDomain(origin) {
     video.pause();
   }
   if (state.sound) state.domain.music = playTrack(char.sound, d.duration, delay, char.trackOptions);
+  $('subtitles').style.top = `${char.subtitleY ?? 50}%`;
   state.domain.subs = showSubtitles(char.subtitles || []);
 }
 

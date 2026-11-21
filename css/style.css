@@ -269,7 +269,7 @@ body.in-domain #debug { opacity: 0; pointer-events: none; }
 .sub.line { font-size: 15px; font-weight: 300; }
 .sub.hanja {
   font-family: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans CJK JP", "Noto Sans KR", sans-serif;
-  font-size: clamp(48px, 17vw, 96px);
+  font-size: clamp(40px, min(17vw, 15vh), 96px);
   font-weight: 900;
   letter-spacing: 0.14em;
   line-height: 1.1;
@@ -286,6 +286,16 @@ body.in-domain #debug { opacity: 0; pointer-events: none; }
   font-size: clamp(42px, 14vw, 88px);
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 0 22px rgba(255, 50, 50, 0.65), 0 0 60px rgba(180, 0, 20, 0.5);
   border-color: rgba(255, 160, 150, 0.4) rgba(255, 160, 150, 0.4) rgba(255, 160, 150, 0.2);
+}
+
+.sub.hanja.shrine2 {
+  font-family: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+  font-size: clamp(40px, 13vw, 84px);
+  letter-spacing: 0.1em;
+  padding-left: 0.1em;
+  color: #ecd6b4;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.95), 0 2px 18px rgba(0, 0, 0, 0.8), 0 0 30px rgba(222, 186, 142, 0.35);
+  border-color: rgba(222, 186, 142, 0.5) rgba(222, 186, 142, 0.5) rgba(222, 186, 142, 0.25);
 }
 
 /* ---------- start screen ---------- */
